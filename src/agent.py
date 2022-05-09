@@ -14,17 +14,11 @@ INTERESTING_PROTOCOLS = {
 TIME_INTERVAL = 60
 MAX_STORAGE = 100
 MAX_AMOUNT_GAS_VALUES = 100
-ACCEPTED_GAS_INTERVAL = 10000
+ACCEPTED_GAS_INTERVAL = 20000
 
 findings_count = 0
 
 gas_counter = GasCounter(TIME_INTERVAL, MAX_STORAGE, ACCEPTED_GAS_INTERVAL)
-
-
-# add_protocol is used for testing purposes mainly, it add a new pair
-# of protocol to the INTERESTING_PROTOCOLS list
-def add_protocol(protocol_address: str, protocol_name: str):
-    INTERESTING_PROTOCOLS[protocol_address] = protocol_name
 
 
 def normalize_gas(gas_value):

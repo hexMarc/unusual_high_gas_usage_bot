@@ -31,7 +31,7 @@ class GasCounter:
         if len(self.transactionDict[protocol]) < 10:
             return Trend.OnTrend
 
-        series = pd.Series(self.transactionDict[protocol])
+        series = pd.Series([x.gas_used for x in self.transactionDict[protocol]])
         d = {'gas': series}
         df = pd.DataFrame(d)
         median = df.median()['gas']
