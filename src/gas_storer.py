@@ -4,8 +4,6 @@ import pandas as pd
 
 
 class Trend(Enum):
-    TwoLevelDown = -2
-    OneLevelDown = -1
     OnTrend = 0
     OneLevelUp = 1
     TwoLevelUp = 2
@@ -38,19 +36,15 @@ class GasCounter:
         df = pd.DataFrame(d)
         median = df.median()['gas']
         max_val = df.max()['gas']
-        min_val = df.min()['gas']
 
         if median - self.accepted_gas <= gas_used <= median + self.accepted_gas:
             return Trend.OnTrend
 
-        if 2 * min_val <= gas_used < median - self.accepted_gas:
-            return Trend.OneLevelDown
+        if gas_used < median:
+            return Trend.OnTrend
 
         if median + self.accepted_gas <= gas_used < 2 * max_val:
             return Trend.OneLevelUp
-
-        if gas_used < 2 * min_val:
-            return Trend.TwoLevelDown
 
         # THis case wil only fit if gas_used > 2 * max_val
         return Trend.TwoLevelUp

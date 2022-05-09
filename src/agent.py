@@ -35,7 +35,7 @@ def handle_gas_finding(transaction_event: TransactionEvent, gas_trend: Trend, pr
     if gas_trend is Trend.OnTrend:
         return None
 
-    if gas_trend in [Trend.OneLevelUp, Trend.OneLevelDown]:
+    if gas_trend is Trend.OneLevelUp:
         return Finding({
             'name': 'Unusual High Gas Usage',
             'description': f'Gas Usage : {normalize_gas(transaction_event.transaction.gas)}',
@@ -46,12 +46,10 @@ def handle_gas_finding(transaction_event: TransactionEvent, gas_trend: Trend, pr
                 'protocol_address': protocol,
                 'protocol_name': INTERESTING_PROTOCOLS[protocol],
                 'transaction_event_hash': transaction_event.hash,
-                'tendency': 'Down' if gas_trend is Trend.OneLevelDown else 'Up'
-
             }
         })
 
-    # In this case the gas_trend should be Trend.TwoLevelUp or Trend.TwoLevelDown, which can be
+    # In this case the gas_trend should be Trend.TwoLevelUp
     return Finding({
         'name': 'Unusual High Gas Usage',
         'description': f'Gas Usage : {normalize_gas(transaction_event.transaction.gas)}',
