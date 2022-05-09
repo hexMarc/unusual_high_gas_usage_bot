@@ -1,44 +1,90 @@
-from forta_agent import Finding, FindingType, FindingSeverity
+from forta_agent import Finding, FindingType, FindingSeverity, TransactionEvent
+from gas_storer import GasCounter, Trend
 
-ERC20_TRANSFER_EVENT = '{"name":"Transfer","type":"event","anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}]}'
-TETHER_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
-TETHER_DECIMALS = 6
+INTERESTING_PROTOCOLS = {
+    '0xacd43e627e64355f1861cec6d3a6688b31a6f952': 'Yearn Dai vault',
+    '0x7be8076f4ea4a4ad08075c2508e481d6c946d12b': 'OpenSea',
+    '0x11111112542d85b3ef69ae05771c2dccff4faa26': '1inch V3',
+    '0xd9e1ce17f2641f24ae83637ab66a2cca9c378b9f': 'SushiSwap: Router',
+    '0xa0c68c638235ee32657e8f720a23cec1bfc77c77': 'Polygon (Matic) Bridge',
+    '0x7a250d5630b4cf539739df2c5dacb4c659f2488d': 'UniSwap V2',
+    '0xa5409ec958c83c3f309868babaca7c86dcb077c1': 'OpenSea: Registry',
+    '0x3845badAde8e6dFF049820680d1F14bD3903a5d0': 'The Sandbox Token',
+}
+TIME_INTERVAL = 60
+MAX_STORAGE = 100
+MAX_AMOUNT_GAS_VALUES = 100
+ACCEPTED_GAS_INTERVAL = 10000
+
 findings_count = 0
 
+gas_counter = GasCounter(TIME_INTERVAL, MAX_STORAGE, ACCEPTED_GAS_INTERVAL)
 
-def handle_transaction(transaction_event):
+
+# add_protocol is used for testing purposes mainly, it add a new pair
+# of protocol to the INTERESTING_PROTOCOLS list
+def add_protocol(protocol_address: str, protocol_name: str):
+    INTERESTING_PROTOCOLS[protocol_address] = protocol_name
+
+
+def normalize_gas(gas_value):
+    return gas_value
+
+
+def handle_gas_finding(transaction_event: TransactionEvent, gas_trend: Trend, protocol: str):
+    if gas_trend is Trend.OnTrend:
+        return None
+
+    if gas_trend in [Trend.OneLevelUp, Trend.OneLevelDown]:
+        return Finding({
+            'name': 'Unusual High Gas Usage',
+            'description': f'Gas Usage : {normalize_gas(transaction_event.transaction.gas)}',
+            'alert_id': 'UnusualHighGasUsage-1',
+            'severity': FindingSeverity.Medium,
+            'type': FindingType.Suspicious,
+            'metadata': {
+                'protocol_address': protocol,
+                'protocol_name': INTERESTING_PROTOCOLS[protocol],
+                'transaction_event_hash': transaction_event.hash,
+                'tendency': 'Down' if gas_trend is Trend.OneLevelDown else 'Up'
+
+            }
+        })
+
+    # In this case the gas_trend should be Trend.TwoLevelUp or Trend.TwoLevelDown, which can be
+    return Finding({
+        'name': 'Unusual High Gas Usage',
+        'description': f'Gas Usage : {normalize_gas(transaction_event.transaction.gas)}',
+        'alert_id': 'UnusualHighGasUsage-2',
+        'severity': FindingSeverity.High,
+        'type': FindingType.Suspicious,
+        'metadata': {
+            'protocol_address': protocol,
+            'protocol_name': INTERESTING_PROTOCOLS[protocol],
+            'transaction_event_hash': transaction_event.hash,
+            'over_tendency': 'Down' if gas_trend is Trend.TwoLevelDown else 'Up'
+        }
+    })
+
+
+def handle_transaction(transaction_event: TransactionEvent):
     findings = []
 
-    # limiting this agent to emit only 5 findings so that the alert feed is not spammed
+    # limiting this agent to emit only len of the protocols listed findings
     global findings_count
-    if findings_count >= 5:
+    if findings_count >= len(INTERESTING_PROTOCOLS):
         return findings
+    triggered_addresses = set(transaction_event.addresses)
+    involved_protocols = [protocol_address for protocol_address in list(INTERESTING_PROTOCOLS.keys()) if
+                          protocol_address in triggered_addresses]
 
-    # filter the transaction logs for any Tether transfers
-    tether_transfer_events = transaction_event.filter_log(
-        ERC20_TRANSFER_EVENT, TETHER_ADDRESS)
+    for protocol in involved_protocols:
+        gas_trend = gas_counter.set_gas(protocol, transaction_event.transaction.hash,
+                                        transaction_event.block.timestamp,
+                                        transaction_event.transaction.gas)
+        f = handle_gas_finding(transaction_event, gas_trend, protocol)
 
-    for transfer_event in tether_transfer_events:
-        # extract transfer event arguments
-        to = transfer_event['args']['to']
-        from_ = transfer_event['args']['from']
-        value = transfer_event['args']['value']
-        # shift decimals of transfer value
-        normalized_value = value / 10 ** TETHER_DECIMALS
-
-        # if more than 10,000 Tether were transferred, report it
-        if normalized_value > 10000:
-            findings.append(Finding({
-                'name': 'High Tether Transfer',
-                'description': f'High amount of USDT transferred: {normalized_value}',
-                'alert_id': 'FORTA-1',
-                'severity': FindingSeverity.Low,
-                'type': FindingType.Info,
-                'metadata': {
-                    'to': to,
-                    'from': from_,
-                }
-            }))
-            findings_count += 1
+        if f is not None:
+            findings.append(f)
 
     return findings
