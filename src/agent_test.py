@@ -5,7 +5,7 @@ from agent import handle_transaction
 
 
 class TestUnusualHighGasUsage:
-    def test_returns_empty_findings_if_no_tether_transfers(self):
+    def test_basic_unusual_high_gas_usage(self):
         gas_values = [15, 16.4, 15, 13.8, 15, 14.1, 16.5, 20, 17, 14, 15.6, 50, 22]
         findings = []
 
