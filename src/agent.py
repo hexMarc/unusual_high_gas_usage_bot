@@ -60,7 +60,6 @@ def handle_gas_finding(transaction_event: TransactionEvent, gas_trend: Trend, pr
             'protocol_address': protocol,
             'protocol_name': INTERESTING_PROTOCOLS[protocol],
             'transaction_event_hash': transaction_event.hash,
-            'over_tendency': 'Down' if gas_trend is Trend.TwoLevelDown else 'Up'
         }
     })
 
