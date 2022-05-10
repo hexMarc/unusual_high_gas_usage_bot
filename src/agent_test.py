@@ -1,12 +1,9 @@
-import datetime
 import itertools
-from unittest.mock import Mock
 
-import forta_agent
-from forta_agent import FindingSeverity, FindingType, create_transaction_event, get_web3_provider, Finding
+from forta_agent import FindingSeverity, create_transaction_event, Finding
 from web3 import Web3, HTTPProvider
 
-from agent import handle_transaction, findings_count
+from agent import handle_transaction
 
 
 def pretty_print(findings: [Finding]):
@@ -49,7 +46,7 @@ class TestUnusualHighGasUsage:
         assert findings[1].severity == FindingSeverity.Medium
 
     def test_ronin_bridge_exploiter(self):
-        # w3_provider: forta_agent.Web3 = get_web3_provider()
+        # w3_provider: forta_agent.Web3 = get_web3_provider() # For some reason always return me one error
         w3 = Web3(HTTPProvider('https://cloudflare-eth.com'))
         w3.provider.request_counter = itertools.count(start=1)
         print(w3.isConnected())
@@ -77,9 +74,4 @@ class TestUnusualHighGasUsage:
                 findings = findings.__add__(fs)
             print(f"Processed block {block_number}")
 
-        print(len(findings))
-
-
-if __name__ == '__main__':
-    t = TestUnusualHighGasUsage()
-    t.test_ronin_bridge_exploiter()
+        assert len(findings) == 43

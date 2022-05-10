@@ -10,12 +10,12 @@ INTERESTING_PROTOCOLS = {
     '0x7a250d5630b4cf539739df2c5dacb4c659f2488d': 'UniSwap V2',
     '0xa5409ec958c83c3f309868babaca7c86dcb077c1': 'OpenSea: Registry',
     '0x3845badAde8e6dFF049820680d1F14bD3903a5d0': 'The Sandbox Token',
-    '0x098B716B8Aaf21512996dC57EB0615e2383E2f96': 'Ronin Bridge  ',
+    '0x098B716B8Aaf21512996dC57EB0615e2383E2f96': 'Ronin Bridge',
 }
 TIME_INTERVAL = 60
 MAX_STORAGE = 100
 MAX_AMOUNT_GAS_VALUES = 100
-ACCEPTED_GAS_INTERVAL = 20000
+ACCEPTED_GAS_INTERVAL = 10000
 
 findings_count = 0
 
@@ -62,10 +62,6 @@ def handle_gas_finding(transaction_event: TransactionEvent, gas_trend: Trend, pr
 def handle_transaction(transaction_event: TransactionEvent):
     findings = []
 
-    # limiting this agent to emit only len of the protocols listed findings
-    # global findings_count
-    # if findings_count >= len(INTERESTING_PROTOCOLS):
-    #     return findings
     triggered_addresses = set(transaction_event.addresses)
     involved_protocols = [protocol_address for protocol_address in list(INTERESTING_PROTOCOLS.keys()) if
                           protocol_address in triggered_addresses]
